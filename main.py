@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request, Body, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any
 import os
 import json
@@ -22,6 +23,14 @@ from services.suscripcion import (
 )
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
