@@ -1,3 +1,5 @@
+# services/suscripcion.py
+
 from supabase.client import Client
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone, timedelta

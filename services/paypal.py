@@ -1,3 +1,5 @@
+# services/paypal.py
+
 import os
 import base64
 import requests
@@ -30,11 +32,14 @@ def get_paypal_access_token() -> str:
 
 def create_subscription(plan_id: str, subscriber_email: str, custom_id: str, return_url: str, cancel_url: str) -> Dict[str, Any]:
     """Crea una suscripción en PayPal y devuelve la respuesta."""
+    logger.info(f"Creando suscripción con plan_id: {plan_id}")
+
     token = get_paypal_access_token()
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
+
     payload = {
         "plan_id": plan_id,
         "subscriber": {"email_address": subscriber_email},
@@ -46,8 +51,14 @@ def create_subscription(plan_id: str, subscriber_email: str, custom_id: str, ret
         }
     }
     response = None
+
+    logger.info(f"Payload enviado a PayPal: {json.dumps(payload, indent=2)}")
+
     try:
         response = requests.post(f"{PAYPAL_API_URL}/v1/billing/subscriptions", headers=headers, json=payload, timeout=15)
+        logger.info(f"Respuesta PayPal status: {response.status_code}")
+        logger.info(f"Respuesta PayPal body: {response.text}")
+        
         response.raise_for_status()
         return response.json()
     except Exception as e:
