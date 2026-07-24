@@ -34,6 +34,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ==================== HEALTH CHECK / ROOT ENDPOINT ====================
+
+@app.get("/")
+def read_root():
+    """
+    Endpoint raíz para evitar el error 404 en Render 
+    y servir como verificación de estado (Health Check).
+    """
+    return {
+        "status": "online",
+        "message": "FastAPI server running successfully",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
 if not supabase_url or not supabase_key:
