@@ -90,8 +90,8 @@ def crear_suscripcion_endpoint(request: Request, data: Dict[str, Any] = Body(...
 
     # URLs de retorno
     app_url = os.environ.get("NEXT_PUBLIC_APP_URL")
-    return_url = f"{app_url}/suscripcion-exito"
-    cancel_url = f"{app_url}/suscripcion-cancelada"
+    return_url = f"{app_url}/suscripcion-exito.html"
+    cancel_url = f"{app_url}/suscripcion-cancelada.html"
 
     # Crear suscripción en PayPal
     try:
