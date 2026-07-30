@@ -9,6 +9,10 @@ import logging
 from datetime import datetime, timezone, timedelta
 from supabase import create_client # type:ignore
 
+# ==================== GOOGLE DRIVE SHARING ====================
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
 logger = logging.getLogger(__name__)
 
 # Importaciones adicionales
@@ -217,6 +221,76 @@ def estado_suscripcion(request: Request):
             return {"status": result.data[0]['status'], "message": "Tu suscripción no está activa"}
         else:
             return {"status": "free", "message": "No tienes suscripción activa"}
+
+def get_drive_service():
+    """Construye el servicio de Drive usando las credenciales de la cuenta de servicio."""
+    service_account_info = json.loads(os.environ.get("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", "{}"))
+    if not service_account_info:
+        raise RuntimeError("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON no configurado")
+    scopes = ['https://www.googleapis.com/auth/drive.file']
+    creds = service_account.Credentials.from_service_account_info(
+        service_account_info, scopes=scopes
+    )
+    return build('drive', 'v3', credentials=creds)
+
+@app.post("/api/share-drive")
+def share_drive_file(request: Request, data: Dict[str, Any] = Body(...)):
+    """
+    Otorga permiso de lectura al archivo de Drive para el usuario autenticado.
+    Solo si tiene plan 'inversor' o 'corporativo'.
+    """
+    # 1. Validar token
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Falta token")
+    token = auth_header.split("Bearer ")[1]
+    try:
+        auth_result = supabase.auth.get_user(token)
+        user = getattr(auth_result, "user", None)
+        if not user:
+            raise HTTPException(status_code=401, detail="Usuario no encontrado")
+        user_id = user.id
+        email = user.email
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    # 2. Obtener plan del usuario
+    perfil_result = supabase.table('perfiles').select('pago_plan').eq('id', user_id).execute()
+    if not perfil_result.data:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
+    plan = perfil_result.data[0].get('pago_plan', 'free')
+    if plan not in ['inversor', 'corporativo']:
+        raise HTTPException(status_code=403, detail="Plan no autorizado para este informe")
+
+    # 3. Obtener file_id (de variable de entorno o de la BD)
+    file_id = data.get('file_id') or os.environ.get("DRIVE_INFORME_FILE_ID")
+    if not file_id:
+        raise HTTPException(status_code=500, detail="File ID no configurado")
+
+    # 4. Agregar permiso al archivo
+    try:
+        drive = get_drive_service()
+        # Verificar si ya existe permiso (opcional)
+        # Creamos el permiso
+        permission = {
+            'type': 'user',
+            'role': 'reader',
+            'emailAddress': email,
+        }
+        result = drive.permissions().create(
+            fileId=file_id,
+            body=permission,
+            sendNotificationEmail=False  # Evita spam
+        ).execute()
+        return {"status": "success", "message": f"Permiso otorgado a {email}"}
+    except Exception as e:
+        error_str = str(e)
+        # Si ya existe, no es error
+        if "already exists" in error_str or "duplicate" in error_str:
+            return {"status": "success", "message": "Permiso ya existente"}
+        else:
+            logger.error(f"Error al compartir Drive: {e}")
+            raise HTTPException(status_code=500, detail=f"Error al compartir: {str(e)}")
 
 # ==================== DECORADOR PARA PROTEGER RUTAS ====================
 
