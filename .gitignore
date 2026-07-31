@@ -1,2 +1,5 @@
 # Ignorar archivo de configuración con la Key de API e individuales
 .env
+
+# Ignorar las siguientes carpetas
+info_render/

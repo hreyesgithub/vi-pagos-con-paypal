@@ -1,3 +1,25 @@
+# Cuenta de Paypal Business
+
++ Email: hrgestionst@gmail.com
+
+**Configurar Webhook de Paypal**: el webhook de PayPal debe apuntar a https://vi-pagos-con-paypal.onrender.com/api/webhook/paypal y tener el PAYPAL_WEBHOOK_ID correspondiente en Render.
+
+## Verificar webhook de PayPal
+
+Asegúrate de que el webhook de PayPal esté configurado para apuntar a tu backend en Render:
+
+`https://vi-pagos-con-paypal.onrender.com/api/webhook/paypal`
+
+En el panel de desarrollador de PayPal, agrega este URL como webhook y suscríbete a los eventos necesarios:
+
+- BILLING.SUBSCRIPTION.ACTIVATED
+
+- BILLING.SUBSCRIPTION.CANCELLED
+
+- BILLING.SUBSCRIPTION.EXPIRED
+
+- PAYMENT.SALE.COMPLETED
+
 ## Sistema de Suscripciones con PayPal
 
 Este módulo gestiona las suscripciones mensuales para los planes **Inversor** y **Corporativo**.
